@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Project | Dina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <a class="brand" href="index.html">dina<span class="dot">.</span>dev</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html">Projects</a>
+    <a href="session-project.html" class="active">Session Project</a>
+    <a href="skills.html">Skills</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main>
+<section class="page-header fade-up">
+  <div class="eyebrow">Session project</div>
+  <h1>One deliverable from each class.</h1>
+</section>
+
+<section class="fade-up">
+  <p style="margin: 0 0 28px; font-size: 15px; line-height: 1.7; color: var(--text-muted); max-width: 640px">A snapshot of the current session: one real deliverable from each course, picked to show a different side of the work. These are graded coursework, not homelab repos, so none of them have a public repository yet.</p>
+
+  <div class="grid">
+    <a class="card" href="reports/windows-server-administration.pdf" target="_blank" rel="noopener">
+      <div class="badge">Networking &amp; Systems</div>
+      <div class="name">Windows Server Administration</div>
+      <div class="desc">Session project with a lab partner: a 4-server Windows Server 2022 domain with AD DS, primary and secondary DNS, DHCP with MAC reservations, WSUS, GPO-enforced security and roaming profiles, Windows Server Backup, and IIS, FTP, and SSH on a domain-joined app server. Verified end to end: profile roaming across machines, DNS resolution, GPO lockdown, SFTP transfer, and WSUS update delivery.</div>
+      <div class="card-footer"><span class="link">View report (PDF) &#8594;</span></div>
+    </a>
+    <a class="card" href="reports/database-systems-audit.pdf" target="_blank" rel="noopener">
+      <div class="badge">Databases</div>
+      <div class="name">Database Systems Audit</div>
+      <div class="desc">Team comparison of MySQL, Oracle Database, SQL Server, and PostgreSQL across cost, data volume, and concurrent users, followed by hands-on work in an Oracle 19c VM: connecting with SQL*Plus and SQL Developer and querying the HR schema.</div>
+      <div class="card-footer"><span class="link">View report (PDF) &#8594;</span></div>
+    </a>
+    <a class="card" href="reports/sql-injection-find-and-fix.pdf" target="_blank" rel="noopener">
+      <div class="badge">Applied Security</div>
+      <div class="name">SQL Injection: Find and Fix</div>
+      <div class="desc">A PyQt5 and Oracle employee-search app that was vulnerable to SQL injection through string-concatenated queries. Rewrote the query layer with bind variables to close the hole and verified the fix against the same inputs that broke the original.</div>
+      <div class="card-footer"><span class="link">View report (PDF) &#8594;</span></div>
+    </a>
+    <a class="card" href="reports/qt-parity-checker.pdf" target="_blank" rel="noopener">
+      <div class="badge">Programming</div>
+      <div class="name">Qt Parity Checker</div>
+      <div class="desc">A small object-oriented PyQt5 desktop app that validates numeric input and reports even or odd, built to practice GUI event handling and input validation in Python.</div>
+      <div class="card-footer"><span class="link">View report (PDF) &#8594;</span></div>
+    </a>
+  </div>
+
+  <p style="margin: 28px 0 0; font-size: 13px; color: var(--text-muted)">Each card opens a report I wrote up from the original lab submission. The original submissions are available on request. For the homelab repositories, see <a href="projects.html">Projects</a>.</p>
+</section>
+</main>
+
+<footer>
+  <div class="credit">Dina / Dinaverse</div>
+</footer>
+
+<script src="shared.js"></script>
+</body>
+</html>

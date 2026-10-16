@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects | Dina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <a class="brand" href="index.html">dina<span class="dot">.</span>dev</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html" class="active">Projects</a>
+    <a href="session-project.html">Session Project</a>
+    <a href="skills.html">Skills</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main>
+<section class="page-header fade-up">
+  <div class="eyebrow">Projects</div>
+  <h1>What's actually running.</h1>
+</section>
+
+<section class="fade-up">
+  <p style="margin: 0 0 20px; font-size: 13px; color: var(--text-muted)">Coursework from the current session lives on its own page: <a class="link" href="session-project.html">Session Project</a>.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+</section>
+</main>
+
+<footer>
+  <div class="credit">Dina / Dinaverse</div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+  var projects = [
+    { name: 'proxmox-homelab-setup', desc: 'Dell T1700 with LXC services, a Docker stack, and Tailscale.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/proxmox-homelab-setup' },
+    { name: 'tailscale-mesh-vpn', desc: 'Zero-config WireGuard mesh VPN tying every physical and virtual node in the lab together.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/tailscale-mesh-vpn' },
+    { name: 'self-hosted-ai-stack', desc: 'Ollama, Docker, and Prometheus/Grafana for local LLM inference and observability.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/self-hosted-ai-stack' },
+    { name: 'arch-linux-multi-gpu-llm', desc: 'Optimized Arch Linux infrastructure for 4x GPU multi-GPU LLM inference.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/arch-linux-multi-gpu-llm' },
+    { name: 'infrastructure-as-code-lab', desc: 'IaC framework for automated deployment of a distributed 5-node laboratory.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/infrastructure-as-code-lab' },
+    { name: 'jarvis-homelab', desc: 'Self-hosted AI assistant on Proxmox: LXC, Ollama and Phi-3.5, a Tailscale mesh, and a custom J.A.R.V.I.S. HUD front end.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/jarvis-homelab' },
+    { name: 'homelab-architecture-docs', desc: 'Architecture documentation for a distributed, self-hosted AI and security lab.', category: 'lab', categoryLabel: 'Homelab', url: 'https://github.com/Dinaverse/homelab-architecture-docs' },
+    { name: 'network-labs-documentation', desc: 'CCNA Packet Tracer labs: VLANs, inter-VLAN routing, EtherChannel, HSRP, DHCPv4, wireless, static and floating routes.', category: 'network', categoryLabel: 'Networking', url: 'https://github.com/Dinaverse/network-labs-documentation' },
+    { name: 'lab-troubleshooting', desc: 'Real postmortems from running distributed infrastructure: symptoms, ruled-out causes, confirmed root causes, and fixes.', category: 'security', categoryLabel: 'Security', url: 'https://github.com/Dinaverse/lab-troubleshooting' },
+    { name: 'security-log-monitoring-scripts', desc: 'Scripts and a small MCP bridge for log monitoring, network reconnaissance, and security analysis.', category: 'security', categoryLabel: 'Security', url: 'https://github.com/Dinaverse/security-log-monitoring-scripts' },
+    { name: 'ai-agent-skill-definitions', desc: 'Skill definitions and integration tools for local AI agents used in the lab.', category: 'tooling', categoryLabel: 'Tooling', url: 'https://github.com/Dinaverse/ai-agent-skill-definitions' },
+    { name: 'n8n-workflows', desc: 'n8n workflow definitions for lab orchestration and automation.', category: 'tooling', categoryLabel: 'Tooling', url: 'https://github.com/Dinaverse/n8n-workflows' },
+    { name: 'lab-reference-index', desc: 'Reference hub pointing to the full Dinaverse portfolio.', category: 'tooling', categoryLabel: 'Tooling', url: 'https://github.com/Dinaverse/lab-reference-index' }
+  ];
+
+  var tabDefs = [
+    { key: 'all', label: 'All' },
+    { key: 'lab', label: 'Homelab' },
+    { key: 'network', label: 'Networking' },
+    { key: 'security', label: 'Security' },
+    { key: 'tooling', label: 'Tooling' }
+  ];
+
+  var currentFilter = 'all';
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderTabs() {
+    var tabsEl = document.getElementById('tabs');
+    tabsEl.innerHTML = '';
+    tabDefs.forEach(function (t) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tab' + (currentFilter === t.key ? ' active' : '');
+      btn.textContent = t.label;
+      btn.addEventListener('click', function () {
+        currentFilter = t.key;
+        renderTabs();
+        renderGrid();
+      });
+      tabsEl.appendChild(btn);
+    });
+  }
+
+  function renderGrid() {
+    var gridEl = document.getElementById('grid');
+    var visible = projects.filter(function (p) {
+      return currentFilter === 'all' || p.category === currentFilter;
+    });
+    gridEl.innerHTML = visible.map(function (p, i) {
+      var linkHtml = p.url
+        ? '<a class="link" href="' + p.url + '">View repo &#8594;</a>'
+        : '<span class="pending">Writeup and repo to add</span>';
+      if (p.name === 'homelab-architecture-docs') {
+        linkHtml += '<br><a class="link" href="lab-topology.html">View in 3D &#8594;</a>';
+      }
+      return (
+        '<div class="card" style="animation-delay:' + (i * 0.04) + 's">' +
+          '<div class="badge">' + escapeHtml(p.categoryLabel) + '</div>' +
+          '<div class="name">' + escapeHtml(p.name) + '</div>' +
+          '<div class="desc">' + escapeHtml(p.desc) + '</div>' +
+          '<div class="card-footer">' + linkHtml + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  renderTabs();
+  renderGrid();
+</script>
+</body>
+</html>

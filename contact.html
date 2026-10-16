@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact | Dina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <a class="brand" href="index.html">dina<span class="dot">.</span>dev</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html">Projects</a>
+    <a href="session-project.html">Session Project</a>
+    <a href="skills.html">Skills</a>
+    <a href="contact.html" class="active">Contact</a>
+  </nav>
+</header>
+
+<main>
+<section class="page-header fade-up">
+  <div class="eyebrow">Contact</div>
+  <h1>Let's talk.</h1>
+</section>
+
+<section class="fade-up">
+  <p style="margin: 0 0 28px; font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 480px">Questions about a project, or want to collaborate? Reach out below.</p>
+  <div class="contact-grid">
+    <div class="contact-form">
+      <label>Name
+        <input type="text" id="contact-name" autocomplete="name">
+      </label>
+      <label>Email
+        <input type="email" id="contact-email" autocomplete="email">
+      </label>
+      <label>Message
+        <textarea id="contact-message" rows="4"></textarea>
+      </label>
+      <button type="button" class="btn-send" id="contact-send">Send</button>
+      <div class="form-status" id="contact-status"></div>
+    </div>
+    <div class="contact-direct">
+      <div class="label">Or reach me directly</div>
+      <a class="contact-email" href="mailto:dinacima@outlook.fr">dinacima@outlook.fr</a>
+      <a class="contact-social" href="https://www.linkedin.com/in/dinacima">LinkedIn</a>
+      <a class="contact-social" href="https://github.com/Dinaverse/Dinaverse">GitHub</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="credit">Dina / Dinaverse</div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+  // Contact form: no backend, so Send opens the visitor's own mail client
+  // with the message pre-filled (mailto:), addressed to Dina directly.
+  document.getElementById('contact-send').addEventListener('click', function () {
+    var name = document.getElementById('contact-name').value.trim();
+    var email = document.getElementById('contact-email').value.trim();
+    var message = document.getElementById('contact-message').value.trim();
+    var statusEl = document.getElementById('contact-status');
+
+    if (!message) {
+      statusEl.textContent = 'Add a message before sending.';
+      return;
+    }
+
+    var subject = encodeURIComponent('Portfolio contact from ' + (name || 'your site'));
+    var bodyLines = [message, '', 'From: ' + (name || '(no name given)') + (email ? ' (' + email + ')' : '')];
+    var body = encodeURIComponent(bodyLines.join('\n'));
+    statusEl.textContent = 'Opening your email client...';
+    window.location.href = 'mailto:dinacima@outlook.fr?subject=' + subject + '&body=' + body;
+  });
+</script>
+</body>
+</html>

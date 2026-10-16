@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dina's Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  :root { color-scheme: light; }
+  .term-wrap {
+    width: 100%; border-radius: 12px; overflow: hidden; margin-top: 8px;
+    background: #10140f; border: 1px solid #202a22; box-shadow: 0 18px 40px rgba(16, 20, 15, 0.22);
+  }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #171d18; border-bottom: 1px solid #202a22; }
+  .term-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .term-dot-r { background: #ff5f56; } .term-dot-y { background: #ffbd2e; } .term-dot-g { background: #27c93f; }
+  .term-title { margin-left: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #7c8a7e; }
+  .term-body {
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px; line-height: 1.75; color: #cfe8d7;
+    padding: 22px 20px 26px; min-height: 230px;
+  }
+  .term-body div { white-space: pre-wrap; word-break: break-word; }
+  .term-prompt { color: #7fb290; }
+  .term-out { color: #93a897; margin: 2px 0 14px; }
+  .term-cursor { display: inline-block; width: 8px; height: 16px; background: #7fb290; vertical-align: text-bottom; margin-left: 2px; animation: term-blink 1s step-end infinite; }
+  @keyframes term-blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="index.html">dina<span class="dot">.</span>dev</a>
+  <nav>
+    <a href="index.html" class="active">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html">Projects</a>
+    <a href="session-project.html">Session Project</a>
+    <a href="skills.html">Skills</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero fade-up">
+  <div class="hero-inner">
+    <div class="eyebrow">Infrastructure &amp; Cybersecurity<span class="blink-cursor" style="margin-left:4px">_</span></div>
+    <h1>Building and documenting a multi-node sovereign home lab.</h1>
+    <p class="welcome">I'm Dina, an infrastructure and cybersecurity student who learns by building. This site walks through the home lab, the coursework behind it, and the skills I've proven.</p>
+
+    <div class="term-wrap">
+      <div class="term-bar">
+        <span class="term-dot term-dot-r"></span>
+        <span class="term-dot term-dot-y"></span>
+        <span class="term-dot term-dot-g"></span>
+        <span class="term-title">dina@dinaverse: ~</span>
+      </div>
+      <div class="term-body" id="term-body"></div>
+    </div>
+
+    <div class="cta">
+      <a class="btn-primary" href="https://github.com/Dinaverse/Dinaverse">View GitHub</a>
+      <a class="btn-secondary" href="https://www.linkedin.com/in/dinacima">LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<section class="fade-up">
+  <div class="featured">
+    <div class="eyebrow">Featured</div>
+    <div class="title">Sovereign AI Infrastructure Lab</div>
+    <div class="desc">A distributed home lab built and run end to end since January 2026: Proxmox virtualization, Docker services, a Tailscale mesh, local AI inference with Ollama, and a 4x GPU cluster for LLM workloads. See the <a href="projects.html">Projects</a> page and filter "Homelab" for every repo that makes it up, or the <a href="lab-topology.html">3D topology</a> for how it's wired together.</div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="credit">Dina / Dinaverse</div>
+</footer>
+
+<script src="shared.js"></script>
+<script>
+  // Hero terminal: a small fake SSH session typing out real facts about the
+  // lab, in place of the abstract node-mesh render. Pure CSS/JS, no WebGL or
+  // external library, so it has nothing left to fail to load.
+  (function () {
+    var body = document.getElementById('term-body');
+    if (!body) return;
+    var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var session = [
+      { cmd: 'whoami', out: 'dina ??? infrastructure & cybersecurity student' },
+      { cmd: 'cat focus.txt', out: 'home lab  ??  networking  ??  linux  ??  security' },
+      { cmd: './uptime.sh --self-taught', out: '10 years hands-on, formal study since Feb 2026' },
+      { cmd: 'ls ./home-lab', out: 'proxmox  docker  tailscale  ollama  gpu-cluster' }
+    ];
+
+    function rowHtml(l, showCursorOnCmd) {
+      var html = '<div><span class="term-prompt">dina@dinaverse:~$</span> ' + l.cmd +
+        (showCursorOnCmd ? '<span class="term-cursor"></span>' : '') + '</div>';
+      if (l.outShown) html += '<div class="term-out">' + l.out + '</div>';
+      return html;
+    }
+
+    if (prefersReducedMotion) {
+      body.innerHTML = session.map(function (l) {
+        return rowHtml({ cmd: l.cmd, out: l.out, outShown: true }, false);
+      }).join('') + '<div><span class="term-prompt">dina@dinaverse:~$</span> <span class="term-cursor"></span></div>';
+      return;
+    }
+
+    var typed = session.map(function () { return { cmd: '', out: '', outShown: false }; });
+    var li = 0, ci = 0, state = 'typing-cmd';
+
+    function renderLive() {
+      var html = '';
+      for (var i = 0; i < li && i < session.length; i++) html += rowHtml(typed[i], false);
+      if (li < session.length) html += rowHtml(typed[li], state === 'typing-cmd');
+      if (li >= session.length) html += '<div><span class="term-prompt">dina@dinaverse:~$</span> <span class="term-cursor"></span></div>';
+      body.innerHTML = html;
+    }
+
+    function tick() {
+      if (li >= session.length) { renderLive(); return; }
+      var full = session[li];
+      if (state === 'typing-cmd') {
+        ci++;
+        typed[li].cmd = full.cmd.slice(0, ci);
+        renderLive();
+        if (ci >= full.cmd.length) { state = 'pause'; setTimeout(tick, 380); }
+        else setTimeout(tick, 28 + Math.random() * 42);
+        return;
+      }
+      if (state === 'pause') {
+        typed[li].out = full.out;
+        typed[li].outShown = true;
+        renderLive();
+        state = 'next';
+        setTimeout(tick, 700);
+        return;
+      }
+      li++; ci = 0; state = 'typing-cmd';
+      renderLive();
+      setTimeout(tick, 260);
+    }
+
+    tick();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab Topology (3D) | Dina</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .breadcrumb { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-faint); margin: 0 0 4px; }
+  .breadcrumb a { color: var(--text-faint); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+
+  .stat-strip { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 22px; }
+  .stat-chip {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 8px 14px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .stat-chip .n { font-size: 15px; font-weight: 700; color: var(--accent-dark); }
+  .stat-chip .l { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px; }
+
+  .lab3d-wrap {
+    position: relative;
+    height: 62vh;
+    min-height: 420px;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background:
+      radial-gradient(circle at 1px 1px, var(--border-soft) 1px, transparent 0) 0 0 / 28px 28px,
+      var(--surface-tint);
+    overflow: hidden;
+  }
+  #lab-canvas-container { position: absolute; inset: 0; }
+  #lab-canvas-container canvas { display: block; }
+  .lab3d-tag {
+    position: absolute; left: 16px; top: 14px; z-index: 4;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; color: var(--accent-dark);
+    background: rgba(255,255,255,0.82); padding: 6px 11px; border-radius: 999px;
+    letter-spacing: 0.5px; pointer-events: none; display: flex; align-items: center; gap: 7px;
+  }
+  .lab3d-tag::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(94, 140, 106, 0.22);
+  }
+  .lab3d-legend {
+    position: absolute; right: 16px; top: 14px; z-index: 4;
+    background: rgba(255,255,255,0.82); border-radius: 8px; padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-muted);
+    display: flex; flex-direction: column; gap: 5px; pointer-events: none;
+  }
+  .lab3d-legend .lg-row { display: flex; align-items: center; gap: 7px; }
+  .lab3d-legend .lg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .lab3d-hint {
+    position: absolute; left: 16px; bottom: 14px; z-index: 4;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-faint);
+    background: rgba(255,255,255,0.82); padding: 6px 10px; border-radius: 6px;
+    pointer-events: none;
+  }
+  .lab3d-loading {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; background: var(--surface-tint);
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text-muted);
+    transition: opacity 0.4s ease; z-index: 5;
+  }
+  .lab3d-spin {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: lab3dspin 0.8s linear infinite;
+  }
+  @keyframes lab3dspin { to { transform: rotate(360deg); } }
+  .node-tooltip {
+    position: absolute; max-width: 240px; padding: 12px 14px;
+    background: var(--surface); border: 1px solid var(--border-soft); border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(94, 140, 106, 0.14);
+    font-size: 12px; line-height: 1.5; color: var(--text-muted);
+    opacity: 0; transform: translateY(6px); transition: opacity 0.15s ease, transform 0.15s ease;
+    pointer-events: none; z-index: 6;
+  }
+  .node-tooltip.visible { opacity: 1; transform: translateY(0); }
+  .node-tooltip .nt-name { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .node-tooltip .nt-sub { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 6px; }
+
+  .node-table-wrap { margin-top: 36px; overflow-x: auto; }
+  .node-table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 13px; }
+  .node-table th {
+    text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px;
+    padding: 0 12px 10px; border-bottom: 1px solid var(--border); font-weight: 500;
+  }
+  .node-table td { padding: 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+  .node-table tr:last-child td { border-bottom: none; }
+  .node-table td.nt-node { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .node-table td.nt-hw { color: var(--accent-dark); }
+
+  .stack-heading {
+    display: flex; align-items: baseline; gap: 10px; margin: 36px 0 16px;
+  }
+  .stack-heading .eyebrow { margin: 0; }
+  .stack-heading::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  .stack-panel {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .stack-item {
+    padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .stack-item:hover { border-color: var(--border); border-left-color: var(--accent-dark); transform: translateY(-2px); }
+  .stack-item .si-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent-dark);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .stack-item .si-value { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .source-note {
+    margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 620px;
+  }
+  .source-note a { font-family: 'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="index.html">dina<span class="dot">.</span>dev</a>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="projects.html">Projects</a>
+    <a href="session-project.html">Session Project</a>
+    <a href="skills.html">Skills</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+</header>
+
+<main>
+<p class="breadcrumb fade-up"><a href="projects.html">Projects</a> / Lab Topology (3D)</p>
+<section class="page-header fade-up" style="padding-top: 8px">
+  <div class="eyebrow">homelab-architecture-docs</div>
+  <h1>The lab, modeled in 3D.</h1>
+</section>
+
+<section class="fade-up">
+  <p style="margin: 0; font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 620px">Drag to rotate, scroll to zoom, hover a node for details. This is the real topology documented in the repo below.</p>
+
+  <div class="stat-strip">
+    <div class="stat-chip"><span class="n">6</span><span class="l">nodes</span></div>
+    <div class="stat-chip"><span class="n">7</span><span class="l">links</span></div>
+    <div class="stat-chip"><span class="n">1</span><span class="l">gateway</span></div>
+  </div>
+
+  <div class="lab3d-wrap">
+    <div id="lab-canvas-container"></div>
+    <div class="lab3d-tag">LIVE TOPOLOGY</div>
+    <div class="lab3d-legend">
+      <div class="lg-row"><span class="lg-dot" style="background:#5e8c6a"></span>Lab node</div>
+      <div class="lg-row"><span class="lg-dot" style="background:#d7e6da; border:1px solid #9aa0a6"></span>Internal LAN</div>
+      <div class="lg-row"><span class="lg-dot" style="background:#9aa0a6"></span>Upstream</div>
+    </div>
+    <div class="node-tooltip" id="node-tooltip"></div>
+    <div class="lab3d-hint">drag to rotate &middot; scroll to zoom &middot; hover a node</div>
+    <div class="lab3d-loading" id="lab3d-loading">
+      <div class="lab3d-spin"></div>
+      <div>Building the scene&hellip;</div>
+    </div>
+  </div>
+
+  <div class="stack-heading"><div class="eyebrow">Node Inventory</div></div>
+  <div class="node-table-wrap">
+    <table class="node-table">
+      <thead>
+        <tr><th>Node</th><th>OS</th><th>Role</th><th>Hardware</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="nt-node">Proxmox</td><td>Proxmox VE</td><td>Hypervisor / Virtualization Host</td><td class="nt-hw">Dell T1700</td></tr>
+        <tr><td class="nt-node">Arch-GPU</td><td>Arch Linux</td><td>GPU Compute / LLM Inference</td><td class="nt-hw">4&times; NVIDIA P106-100 (24GB VRAM)</td></tr>
+        <tr><td class="nt-node">Kali-Master</td><td>Kali Linux</td><td>Master Orchestrator / SecOps</td><td class="nt-hw">x86 workstation</td></tr>
+        <tr><td class="nt-node">Raspberry-Pi</td><td>Raspbian</td><td>IDS / DNS / Network Services</td><td class="nt-hw">ARM SBC</td></tr>
+        <tr><td class="nt-node">Dell-Gateway</td><td>Debian</td><td>Gateway / Monitoring</td><td class="nt-hw">Enterprise rack unit</td></tr>
+        <tr><td class="nt-node">AMD-Storage</td><td>Ubuntu Server</td><td>Storage Worker / CPU Compute</td><td class="nt-hw">AMD Canwork189</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stack-heading"><div class="eyebrow">Core Infrastructure Stack</div></div>
+  <div class="stack-panel">
+    <div class="stack-item"><div class="si-label">OS layer</div><div class="si-value">Arch Linux, Kali Linux, Debian, Raspbian, Ubuntu Server, Proxmox VE</div></div>
+    <div class="stack-item"><div class="si-label">Virtualization</div><div class="si-value">Proxmox VE, LXC containers, QEMU/KVM VMs</div></div>
+    <div class="stack-item"><div class="si-label">Containers</div><div class="si-value">Docker, Docker Compose</div></div>
+    <div class="stack-item"><div class="si-label">AI runtime</div><div class="si-value">Ollama, CUDA, multi-GPU VRAM pooling</div></div>
+    <div class="stack-item"><div class="si-label">Monitoring</div><div class="si-value">Prometheus, Grafana, custom Python agents</div></div>
+    <div class="stack-item"><div class="si-label">Security</div><div class="si-value">Suricata IDS, custom log analytics, NVIDIA Morpheus</div></div>
+    <div class="stack-item"><div class="si-label">Networking</div><div class="si-value">VLAN segmentation, custom DNS, SSH hardening, Tailscale</div></div>
+  </div>
+
+  <p class="source-note">Node roles, OS and hardware here come straight from the <a href="https://github.com/Dinaverse/homelab-architecture-docs">homelab-architecture-docs</a> README. Its own <span class="mono">network-topology/</span> diagram is still marked planned, so this scene is built from its Node Inventory table and ASCII topology instead.</p>
+</section>
+</main>
+
+<footer>
+  <div class="credit">Dina / Dinaverse</div>
+</footer>
+
+<script src="shared.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+var container = document.getElementById('lab-canvas-container');
+var loadingEl = document.getElementById('lab3d-loading');
+var tooltipEl = document.getElementById('node-tooltip');
+var wrapEl = document.querySelector('.lab3d-wrap');
+
+var ACCENT = 0x5e8c6a;
+var ACCENT_LIGHT = 0x8fb79a;
+var NEUTRAL = 0x9aa0a6;
+var LINE_COLOR = 0xc9d6cc;
+
+var nodeDefs = [
+  {
+    id: 'internet', label: 'Internet', sub: 'Upstream',
+    pos: [0, 6.4, 0], shape: 'sphere', color: NEUTRAL, size: 0.55,
+    info: 'The lab???s upstream connection to the outside network.'
+  },
+  {
+    id: 'gateway', label: 'Dell Gateway', sub: 'Debian ?? Gateway / Monitoring',
+    pos: [0, 3.9, 0], shape: 'tower', color: ACCENT, size: 1.05,
+    info: 'Enterprise rack unit. Routes traffic in and out of the lab and runs the monitoring stack (Prometheus, Grafana, custom Python agents).'
+  },
+  {
+    id: 'lan', label: 'Internal LAN', sub: '192.168.x.0/24',
+    pos: [0, 1.0, 0], shape: 'ring', color: 0xd7e6da, size: 2.3,
+    info: 'The internal network segment every lab node sits on. VLAN-segmented, with Tailscale overlaying it.'
+  },
+  {
+    id: 'kali', label: 'Kali Master', sub: 'Kali Linux ?? Orchestrator / SecOps',
+    pos: [-5.3, -2.1, 3.0], shape: 'tower', color: ACCENT, size: 0.95,
+    info: 'x86 workstation. Master orchestrator and security-operations hub, handling log monitoring, network recon, and security analysis.'
+  },
+  {
+    id: 'arch', label: 'Arch GPU Cluster', sub: 'Arch Linux ?? 4x NVIDIA P106-100 (24GB VRAM)',
+    pos: [5.3, -2.1, 3.0], shape: 'cluster', color: ACCENT, size: 0.95,
+    info: 'GPU compute cluster for local LLM inference, using 4x NVIDIA P106-100 pooling 24GB VRAM via Ollama and CUDA.'
+  },
+  {
+    id: 'pi', label: 'Raspberry Pi', sub: 'Raspbian ?? IDS / DNS / Network services',
+    pos: [-5.3, -2.1, -3.0], shape: 'tower', color: ACCENT, size: 0.65,
+    info: 'ARM SBC. Runs Suricata IDS, DNS, and other lightweight always-on network services.'
+  },
+  {
+    id: 'storage', label: 'AMD Storage', sub: 'Ubuntu Server ?? Storage / CPU worker',
+    pos: [5.3, -2.1, -3.0], shape: 'tower', color: ACCENT, size: 0.95,
+    info: 'AMD Canwork189. Storage and general-purpose CPU compute worker for the lab.'
+  },
+  {
+    id: 'proxmox', label: 'Proxmox Host', sub: 'Proxmox VE ?? Hypervisor',
+    pos: [0, -2.1, 0], shape: 'tower', color: ACCENT_LIGHT, size: 1.1,
+    info: 'Dell T1700 running Proxmox VE. Hosts the LXC containers and VMs that back the lab???s services, including the reverse proxy.'
+  }
+];
+
+var edges = [
+  ['internet', 'gateway'],
+  ['gateway', 'lan'],
+  ['lan', 'kali'],
+  ['lan', 'arch'],
+  ['lan', 'pi'],
+  ['lan', 'storage'],
+  ['lan', 'proxmox']
+];
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeef4f0);
+
+var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(9, 6, 11);
+
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+var controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 6;
+controls.maxDistance = 24;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.6;
+controls.target.set(0, 0.6, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+var dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+dirLight.position.set(6, 10, 6);
+scene.add(dirLight);
+var fillLight = new THREE.DirectionalLight(0xffffff, 0.35);
+fillLight.position.set(-6, 4, -6);
+scene.add(fillLight);
+
+// Subtle floor grid
+var grid = new THREE.GridHelper(22, 22, 0xd7e6da, 0xe4e4df);
+grid.position.y = -3.2;
+scene.add(grid);
+
+var nodeMeshes = {};
+var labelSprites = [];
+
+function makeLabelSprite(text, sub) {
+  var canvas = document.createElement('canvas');
+  var scale = 2;
+  canvas.width = 420 * scale;
+  canvas.height = 110 * scale;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#1b1f23';
+  ctx.font = '600 24px IBM Plex Mono, monospace';
+  ctx.fillText(text, 210, 46);
+  ctx.fillStyle = '#5e8c6a';
+  ctx.font = '500 16px IBM Plex Mono, monospace';
+  ctx.fillText(sub, 210, 72);
+  var texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  var material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  var sprite = new THREE.Sprite(material);
+  sprite.scale.set(4.2, 1.1, 1);
+  return sprite;
+}
+
+// A small stylized "computer" ??? chassis, a lighter face plate, two drive-bay
+// slits, and a status LED ??? built from flat boxes so it reads as a machine
+// rather than a bare cube. `offset` lets several be packed into one group
+// (the GPU cluster's four blades) without nesting another Group level, so
+// hover/raycast picking (which only looks one level into a node's group)
+// still finds every part.
+function addComputerParts(parentGroup, color, size, opts) {
+  opts = opts || {};
+  var offset = opts.offset || [0, 0, 0];
+  var flat = !!opts.flat;
+
+  var bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.12 });
+  var panelColor = new THREE.Color(color).lerp(new THREE.Color(0xffffff), 0.22).getHex();
+  var panelMat = new THREE.MeshStandardMaterial({ color: panelColor, roughness: 0.4, metalness: 0.08 });
+  var darkMat = new THREE.MeshStandardMaterial({ color: 0x24302a, roughness: 0.7 });
+  var ledMat = new THREE.MeshStandardMaterial({ color: 0x9fe8b4, emissive: 0x4fae6a, emissiveIntensity: 0.9 });
+
+  var w = flat ? size * 1.5 : size * 0.75;
+  var h = flat ? size * 0.4 : size * 1.05;
+  var d = flat ? size * 0.9 : size * 0.6;
+
+  function place(m, x, y, z) {
+    m.position.set(offset[0] + x, offset[1] + y, offset[2] + z);
+    parentGroup.add(m);
+    return m;
+  }
+
+  place(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), bodyMat), 0, 0, 0);
+  place(new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, h * 0.82, d * 0.06), panelMat), 0, 0, d / 2 + 0.01);
+
+  var slitCount = flat ? 1 : 2;
+  for (var i = 0; i < slitCount; i++) {
+    var yOff = flat ? 0 : h * 0.22 - i * h * 0.34;
+    place(new THREE.Mesh(new THREE.BoxGeometry(w * 0.66, h * 0.05, 0.02), darkMat), 0, yOff, d / 2 + 0.045);
+  }
+
+  place(new THREE.Mesh(new THREE.SphereGeometry(size * 0.045, 8, 8), ledMat), w * 0.32, -h * 0.32, d / 2 + 0.04);
+
+  return { w: w, h: h, d: d };
+}
+
+nodeDefs.forEach(function (def) {
+  var group = new THREE.Group();
+  group.position.set(def.pos[0], def.pos[1], def.pos[2]);
+
+  var mat = new THREE.MeshStandardMaterial({ color: def.color, roughness: 0.45, metalness: 0.08 });
+  var mesh;
+  var labelY;
+
+  if (def.shape === 'sphere') {
+    mesh = new THREE.Mesh(new THREE.SphereGeometry(def.size, 24, 24), mat);
+    labelY = def.size + 0.5;
+  } else if (def.shape === 'ring') {
+    mesh = new THREE.Mesh(new THREE.TorusGeometry(def.size, 0.06, 12, 48), mat);
+    mesh.rotation.x = Math.PI / 2;
+    labelY = 0.5;
+  } else if (def.shape === 'cluster') {
+    mesh = new THREE.Group();
+    var bladeSize = def.size * 0.52;
+    var offsets = [[-0.42, 0.26, 0], [0.42, 0.26, 0], [-0.42, -0.26, 0], [0.42, -0.26, 0]];
+    offsets.forEach(function (p) {
+      addComputerParts(mesh, def.color, bladeSize, { offset: p, flat: true });
+    });
+    labelY = 0.95;
+  } else {
+    mesh = new THREE.Group();
+    var dims = addComputerParts(mesh, def.color, def.size, { flat: false });
+    labelY = dims.h / 2 + 0.5;
+  }
+
+  mesh.userData = { nodeId: def.id };
+  if (mesh.isGroup) {
+    mesh.children.forEach(function (c) { c.userData = { nodeId: def.id }; });
+  }
+  group.add(mesh);
+
+  var label = makeLabelSprite(def.label, def.sub);
+  label.position.set(0, labelY, 0);
+  group.add(label);
+
+  scene.add(group);
+  nodeMeshes[def.id] = { group: group, mesh: mesh, def: def };
+});
+
+// Edges
+var lineMat = new THREE.LineBasicMaterial({ color: LINE_COLOR, transparent: true, opacity: 0.8 });
+edges.forEach(function (pair) {
+  var a = nodeMeshes[pair[0]].group.position;
+  var b = nodeMeshes[pair[1]].group.position;
+  var points = [a.clone(), b.clone()];
+  var geom = new THREE.BufferGeometry().setFromPoints(points);
+  scene.add(new THREE.Line(geom, lineMat));
+});
+
+function resize() {
+  var w = wrapEl.clientWidth;
+  var h = wrapEl.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+var hoveredId = null;
+
+function allMeshes() {
+  var list = [];
+  Object.keys(nodeMeshes).forEach(function (id) {
+    var m = nodeMeshes[id].mesh;
+    if (m.isGroup) {
+      m.children.forEach(function (c) { list.push(c); });
+    } else {
+      list.push(m);
+    }
+  });
+  return list;
+}
+
+renderer.domElement.addEventListener('mousemove', function (e) {
+  var rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  var hits = raycaster.intersectObjects(allMeshes());
+
+  if (hits.length) {
+    var id = hits[0].object.userData.nodeId;
+    if (id !== hoveredId) {
+      hoveredId = id;
+      var def = nodeMeshes[id].def;
+      tooltipEl.innerHTML = '<div class="nt-name">' + def.label + '</div><div class="nt-sub">' + def.sub + '</div>' + def.info;
+      tooltipEl.classList.add('visible');
+    }
+    var left = e.clientX - rect.left + 16;
+    var top = e.clientY - rect.top + 16;
+    if (left + 240 > rect.width) left = e.clientX - rect.left - 256;
+    tooltipEl.style.left = left + 'px';
+    tooltipEl.style.top = top + 'px';
+    renderer.domElement.style.cursor = 'pointer';
+  } else {
+    hoveredId = null;
+    tooltipEl.classList.remove('visible');
+    renderer.domElement.style.cursor = 'grab';
+  }
+});
+
+renderer.domElement.addEventListener('mouseleave', function () {
+  hoveredId = null;
+  tooltipEl.classList.remove('visible');
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+function hideLoading() {
+  loadingEl.style.opacity = '0';
+  setTimeout(function () { loadingEl.style.display = 'none'; }, 350);
+}
+requestAnimationFrame(function () { requestAnimationFrame(hideLoading); });
+</script>
+</body>
+</html>
