@@ -16,6 +16,17 @@ Source of **https://dinaverse.github.io/**, my portfolio as an infrastructure an
 
 Plain static HTML, CSS and JavaScript. No build step, no framework. `.nojekyll` tells GitHub Pages to serve the files as they are.
 
+## Architecture
+
+The site exists in three places. Only the workstation copy is edited and pushed.
+
+```mermaid
+flowchart LR
+    A["Lab reverse-proxy container<br/>original copy, private mesh only"] -- "copied out once" --> B["Linux workstation<br/>git working copy (edited here)"]
+    B -- "git push" --> C["GitHub<br/>Dinaverse/Dinaverse.github.io, main"]
+    C -- "automatic build" --> D["GitHub Pages<br/>dinaverse.github.io (public)"]
+```
+
 ## How it is published
 
 The site was first built and served privately inside the home lab, on a reverse-proxy container reachable only over the lab's private mesh VPN. To make it public without exposing any lab host to the internet, I moved it to GitHub Pages instead of opening a tunnel into the lab:
